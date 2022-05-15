@@ -41,3 +41,62 @@ int main(int argc, char **argv) {
     Close(connfd);  // line:netp:tiny:close
   }
 }
+
+void doit(int fd)
+{
+  int is_static;
+  struct stat sbuf;
+  char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
+  char filename[MAXLINE], cgiargs[MAXLINE];
+  rio_t rio;
+
+  /* Read request line and headers */
+  Rio_readinitb(&rio, fd);
+  Rio_readlineb(&rio, buf, MAXLINE);
+  printf("Request headers:\n");
+  printf("%s", buf);
+  sscanf(buf, "%s %s %s", method, uri, version); // buf에 문자열 담아줌
+  if (strcasecmp(method, "GET")) {
+    clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
+    return;
+  }
+  read_requesthdrs(&rio);
+
+  /* Parse URI from GET request */
+  is_static = parse_uri(uri, filename, cgiargs);
+  if (stat(filename, &sbuf) < 0) {
+    clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
+    return ;
+  }
+
+  if (is_static) { /* Serve static contemnt */
+    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
+      return;
+    }  
+    serve_static(fd, filename, sbuf.st_size);    
+  }
+  else { /* Serve dynamic content */
+    if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CFI program");
+      return;
+    }
+    serve_dynamic(fd, filename, cgiargs);
+  }
+}
+
+void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
+{
+  char buf[MAXLINE], body[MAXBUF];
+
+  /* Build the HTTP response body */
+  sprintf(body, "<html><title>Tiny Error</title>");
+  sprintf(body, "%s<body bgcolor=""ffffff"">\r\n", body);
+  sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
+  sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
+  sprintf(body, "%s<hr><em>The Tiny Web server</em>\r\n", body);
+
+  /* Print the HTTP response */
+  sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
+  
+}
