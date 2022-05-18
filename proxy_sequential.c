@@ -32,6 +32,8 @@ void parse_uri(char *uri, char *host, int *port, char *path);
 void build_http_header(char *http_header, char *hostname, char *path, rio_t *client_rio);
 int connect_endServer(char *hostname, int port);
 
+
+
 int main(int argc, char **argv) {
     int listenfd, connfd;
     socklen_t clientlen;
@@ -57,6 +59,8 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+
+
 
 /** 한 개의 HTTP 트랜잭션을 처리 */
 void doit(int fd) {
@@ -102,6 +106,8 @@ void doit(int fd) {
     return;
 }
 
+
+
 void parse_uri(char *uri, char *host, int *port, char *path) {
     *port = end_server_port; 
     char *pos = strstr(uri, "//"); // uri에 '//'가 있다면 자르기 위해 해당 위치를 pos에 저장함
@@ -127,6 +133,7 @@ void parse_uri(char *uri, char *host, int *port, char *path) {
 
     return;
 }
+
 
 
 void build_http_header(char *http_header, char *hostname, char *path, rio_t *client_rio) {
@@ -165,6 +172,8 @@ void build_http_header(char *http_header, char *hostname, char *path, rio_t *cli
   return;
 }
 
+
+
 /** 에러 메세지를 클라이언트에 보냄 */
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) {
     char buf[MAXLINE], body[MAXBUF];
@@ -183,6 +192,9 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
     Rio_writen(fd, buf, strlen(buf));
     Rio_writen(fd, body, strlen(body));
 }
+
+
+
 
 inline int connect_endServer(char *hostname, int port) {
   char portStr[100];
